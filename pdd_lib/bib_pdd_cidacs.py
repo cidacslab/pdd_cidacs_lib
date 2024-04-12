@@ -31,7 +31,7 @@ class BibPddCidacs:
             cred = Path(cred)
             if cred.exists() and cred.is_file():
                 self._load_auth(cred)
-        elif isinstance(PosixPath):
+        elif isinstance(cred, PosixPath):
             if cred.exists() and cred.is_file():
                 self._load_auth(cred)
         elif isinstance(cred, dict):
@@ -49,24 +49,38 @@ class BibPddCidacs:
                 url='http://127.0.0.1:8000/list_db',
                 auth=self._auth)
             if conn.status_code == 200:
-                return conn.json()
+                return list(conn.json().values())
 
-    def select_db(self, view, limit=100, download=True, filename=None):
+    def _write_file(self, conn, filename):
+        if filename is not None:
+            with open(filename, 'wb') as fwb:
+                for chunk in conn.iter_raw():
+                    fwb.write(chunk)
+            return f'Dados salvos em {filename}'
+
+    def query_db(self,
+                 view,
+                 query='',
+                 limit=100,
+                 download=False,
+                 filename=None):
         data = {
             'view': view,
             'limit': limit,
-            'download': download,
+            'query': query,
         }
         with Client() as client:
-            conn = client.post(url='http://127.0.0.1:8000/select_view',
+            conn = client.post(url='http://127.0.0.1:8000/query',
                                params=data,
                                auth=self._auth)
-            if download and filename:
-                with open(filename) as fw:
-                    for data in conn.iter_raw():
-                        fw.write(data)
-                return f'Dados salvos em: {filename}'
-            return pd.read_json(conn.json())
-
-    def query_db(self, query):
-        return
+            if download is True and filename is not None:
+                self._write_file(conn, filename)
+            elif download is True and filename is None:
+                self._write_file(conn, view.replace(' ', '_').lower())
+            if limit >= 1000:
+                return {'Ui':
+                        'Será que você da conta de tudo isso em memória? ;|'}
+            try:
+                return pd.read_json(conn.json())
+            except ValueError:
+                return conn.json()
