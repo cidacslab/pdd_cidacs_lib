@@ -11,7 +11,5 @@ query = """
 select * From 1 limit 10
 """
 
-res_query = client.query_db(query=query,
-                            download=False,
-                            filename='meu_dataset.csv')
+res_query = client.query(query)
 print(res_query)
