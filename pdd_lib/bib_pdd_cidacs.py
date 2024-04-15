@@ -4,6 +4,7 @@ from pathlib import Path, PosixPath
 from typing import Union
 from httpx import BasicAuth, Client
 import pandas as pd
+import tqdm
 
 
 def config_auth(cred: dict) -> None:
@@ -52,12 +53,13 @@ class BibPddCidacs:
             if conn.status_code == 200:
                 return conn.json()
 
-    def _write_file(self, conn, filename):
-        if filename is not None:
-            with open(filename, 'wb') as fwb:
-                for chunk in conn.iter_raw():
+    def _write_file(self, conn, filename, tqdm_params):
+        with open(filename, 'wb') as fwb:
+            with tqdm.tqdm(**tqdm_params) as pb:
+                for chunk in conn.iter_raw(chunk_size=8192):
                     fwb.write(chunk)
-            return f'Dados salvos em {filename}'
+                    pb.update(len(chunk))
+        return f'Dados salvos em {filename}'
 
     def query(self, query):
         data = {
@@ -77,13 +79,24 @@ class BibPddCidacs:
             'query': query,
         }
         with Client() as client:
-            conn = client.post(url='http://127.0.0.1:8000/download',
+            with client.stream(url='http://127.0.0.1:8000/download',
                                params=data,
-                               auth=self._auth)
-            for chunk in conn.iter_raw():
-                print(chunk)
-            if filename is not None:
-                self._write_file(conn, filename)
-            elif filename is None:
-                date = datetime.now()
-                self._write_file(conn, f'download_pdd_cidacs_{date}.csv')
+                               auth=self._auth,
+                               timeout=None,
+                               method='POST') as conn:
+                total = int(conn.headers.get('content-length', 0))
+                tqdm_params = {
+                    'desc': filename,
+                    'total': total,
+                    'miniters': 1,
+                    'unit': 'B',
+                    'unit_scale': True,
+                    'unit_divisor': 1024
+                }
+                if filename is not None:
+                    self._write_file(conn, filename, tqdm_params)
+                elif filename is None:
+                    date = datetime.now().strftime('%Y-%m-%d')
+                    self._write_file(conn,
+                                     f'download_pdd_cidacs_{date}.csv',
+                                     tqdm_params)

@@ -8,8 +8,8 @@ client.authentication('/home/marconso/.pdd_cidacs.json')
 # print(dbs)
 
 query = """
-select * From 1 limit 10
+select * From 1 limit 20
 """
 
-res_query = client.query(query)
-print(res_query)
+# res_query = client.download(query)
+res_query = client.download(query)
