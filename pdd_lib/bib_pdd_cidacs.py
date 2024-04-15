@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 from pathlib import Path, PosixPath
 from typing import Union
@@ -49,7 +50,7 @@ class BibPddCidacs:
                 url='http://127.0.0.1:8000/list_db',
                 auth=self._auth)
             if conn.status_code == 200:
-                return list(conn.json().values())
+                return conn.json()
 
     def _write_file(self, conn, filename):
         if filename is not None:
@@ -59,15 +60,12 @@ class BibPddCidacs:
             return f'Dados salvos em {filename}'
 
     def query_db(self,
-                 view,
                  query='',
-                 limit=100,
                  download=False,
                  filename=None):
         data = {
-            'view': view,
-            'limit': limit,
             'query': query,
+            'download': download,
         }
         with Client() as client:
             conn = client.post(url='http://127.0.0.1:8000/query',
@@ -76,11 +74,20 @@ class BibPddCidacs:
             if download is True and filename is not None:
                 self._write_file(conn, filename)
             elif download is True and filename is None:
-                self._write_file(conn, view.replace(' ', '_').lower())
-            if limit >= 1000:
-                return {'Ui':
-                        'Será que você da conta de tudo isso em memória? ;|'}
+                date = datetime.now()
+                self._write_file(conn, f'download_pdd_cidacs_{date}.csv')
             try:
                 return pd.read_json(conn.json())
             except ValueError:
                 return conn.json()
+
+    def download(self, db, download=False, filename=None):
+        with Client() as client:
+            conn = client.post(url='http://127.0.0.1:8000/download',
+                               # params=data,
+                               auth=self._auth)
+            if download is True and filename is not None:
+                self._write_file(conn, filename)
+            elif download is True and filename is None:
+                date = datetime.now()
+                self._write_file(conn, f'download_pdd_cidacs_{date}.csv')
