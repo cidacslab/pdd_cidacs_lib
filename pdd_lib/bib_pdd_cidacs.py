@@ -48,7 +48,7 @@ class BibPddCidacs:
         with Client() as client:
 
             conn = client.get(
-                url='http://127.0.0.1:8000/list_db',
+                url='http://35.209.112.76:3000/list_db',
                 auth=self._auth)
             if conn.status_code == 200:
                 return conn.json()
@@ -66,7 +66,7 @@ class BibPddCidacs:
             'query': query,
         }
         with Client() as client:
-            conn = client.post(url='http://127.0.0.1:8000/query',
+            conn = client.post(url='http://35.209.112.76:3000/query',
                                params=data,
                                auth=self._auth)
             try:
@@ -79,7 +79,7 @@ class BibPddCidacs:
             'query': query,
         }
         with Client() as client:
-            with client.stream(url='http://127.0.0.1:8000/download',
+            with client.stream(url='http://35.209.112.76:3000/download',
                                params=data,
                                auth=self._auth,
                                timeout=None,
