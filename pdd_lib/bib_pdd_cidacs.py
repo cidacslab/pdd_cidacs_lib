@@ -49,7 +49,9 @@ class BibPddCidacs:
 
             conn = client.get(
                 url='http://35.209.112.76:3000/list_db',
-                auth=self._auth)
+                auth=self._auth,
+                timeout=None
+            )
             if conn.status_code == 200:
                 return conn.json()
 
@@ -66,9 +68,12 @@ class BibPddCidacs:
             'query': query,
         }
         with Client() as client:
-            conn = client.post(url='http://35.209.112.76:3000/query',
-                               params=data,
-                               auth=self._auth)
+            conn = client.post(
+                url='http://35.209.112.76:3000/query',
+                params=data,
+                auth=self._auth,
+                timeout=None
+            )
             try:
                 return pd.read_json(conn.json())
             except ValueError:
@@ -79,11 +84,13 @@ class BibPddCidacs:
             'query': query,
         }
         with Client() as client:
-            with client.stream(url='http://35.209.112.76:3000/download',
-                               params=data,
-                               auth=self._auth,
-                               timeout=None,
-                               method='POST') as conn:
+            with client.stream(
+                url='http://35.209.112.76:3000/download',
+                params=data,
+                auth=self._auth,
+                timeout=None,
+                method='POST',
+            ) as conn:
                 total = int(conn.headers.get('content-length', 0))
                 tqdm_params = {
                     'desc': filename,
