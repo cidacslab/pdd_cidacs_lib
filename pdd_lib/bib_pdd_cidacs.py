@@ -78,6 +78,41 @@ class BibPddCidacs:
                 return pd.read_json(conn.json())
             except ValueError:
                 return conn.json()
+            
+    def shape(self, dataset):
+        shape = list()
+        querys = ['SELECT COUNT(*) FROM %s'%(str(dataset)), 'SELECT * FROM %s LIMIT 1'%(str(dataset))]
+        
+        for i in range(2):
+            data = {
+                'query': querys[i]
+            }
+            with Client() as client:
+                conn = client.post(url='http://35.209.112.76:3000/query',
+                                   params=data,
+                                   auth=self._auth)
+                try:
+                    if(i == 0): 
+                        shape.append(pd.read_json(conn.json())['f0_'].to_list()[0])
+                    else:
+                        shape.append(len(pd.read_json(conn.json()).columns.to_list()))
+                except ValueError:
+                    return conn.json()
+                
+        return shape  
+    
+    def list_columns(self, dataset):
+         data = {
+            'query': 'SELECT * FROM %s LIMIT 1'%(str(dataset))
+        }
+         with Client() as client:
+            conn = client.post(url='http://35.209.112.76:3000/query',
+                               params=data,
+                               auth=self._auth)
+            try:
+                return pd.read_json(conn.json()).columns.to_list()
+            except ValueError:
+                return conn.json()  
 
     def download(self, query, filename=None):
         data = {
