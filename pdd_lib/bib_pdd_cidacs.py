@@ -90,7 +90,9 @@ class BibPddCidacs:
             with Client() as client:
                 conn = client.post(url='http://35.209.112.76:3000/query',
                                    params=data,
-                                   auth=self._auth)
+                                   auth=self._auth,
+                                   timeout=None
+                                   )
                 try:
                     if(i == 0): 
                         shape.append(pd.read_json(conn.json())['f0_'].to_list()[0])
@@ -108,7 +110,8 @@ class BibPddCidacs:
          with Client() as client:
             conn = client.post(url='http://35.209.112.76:3000/query',
                                params=data,
-                               auth=self._auth)
+                               auth=self._auth,
+                               timeout=None)
             try:
                 return pd.read_json(conn.json()).columns.to_list()
             except ValueError:
