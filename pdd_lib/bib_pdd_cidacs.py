@@ -7,15 +7,6 @@ import pandas as pd
 import tqdm
 
 
-def config_auth(cred: dict) -> None:
-    if ('email' not in cred and 'token' not in cred) or \
-            ('email' not in cred or 'token' not in cred):
-        raise ValueError('Precisa setar valores de email e token válidos')
-    else:
-        with open(Path().home() / '.bib_pdd_cidacs.json', 'w') as fwauth:
-            json.dump(cred, fwauth)
-
-
 class BibPddCidacs:
     _auth = None
 
@@ -29,13 +20,24 @@ class BibPddCidacs:
                 )
             except FileNotFoundError:
                 raise FileNotFoundError('Você precisa se autenticar')
+
         elif isinstance(cred, str):
             cred = Path(cred)
             if cred.exists() and cred.is_file():
                 self._load_auth(cred)
+            else:
+                raise FileNotFoundError(
+                    'O arquivo não existe ou não foi digitado corretamente.'
+                )
+
         elif isinstance(cred, PosixPath):
             if cred.exists() and cred.is_file():
                 self._load_auth(cred)
+            else:
+                raise FileNotFoundError(
+                    'O arquivo não existe ou não foi digitado corretamente.'
+                )
+
         elif isinstance(cred, dict):
             self._auth = BasicAuth(cred['email'], cred['token'])
 
