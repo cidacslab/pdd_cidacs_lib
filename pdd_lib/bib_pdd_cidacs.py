@@ -1,6 +1,7 @@
 from datetime import datetime
 import json
 from pathlib import Path, PosixPath
+import io
 from typing import Union
 from httpx import BasicAuth, Client
 import pandas as pd
@@ -77,7 +78,7 @@ class BibPddCidacs:
                 timeout=None
             )
             try:
-                return pd.read_json(conn.json())
+                return pd.read_json(io.StringIO(conn.json()))
             except ValueError:
                 return conn.json()
             
@@ -97,9 +98,9 @@ class BibPddCidacs:
                                    )
                 try:
                     if(i == 0): 
-                        shape.append(pd.read_json(conn.json())['f0_'].to_list()[0])
+                        shape.append(pd.read_json(io.StringIO(conn.json()))['f0_'].to_list()[0])
                     else:
-                        shape.append(len(pd.read_json(conn.json()).columns.to_list()))
+                        shape.append(len(pd.read_json(io.StringIO(conn.json())).columns.to_list()))
                 except ValueError:
                     return conn.json()
                 
@@ -115,7 +116,7 @@ class BibPddCidacs:
                                auth=self._auth,
                                timeout=None)
             try:
-                return pd.read_json(conn.json()).columns.to_list()
+                return pd.read_json(io.StringIO(conn.json())).columns.to_list()
             except ValueError:
                 return conn.json()  
 
