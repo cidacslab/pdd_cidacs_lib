@@ -1,15 +1,14 @@
+from pathlib import Path
 from bib_pdd_cidacs import BibPddCidacs
+from pprint import pprint as print
 
 
 client = BibPddCidacs()
-client.authentication('/home/marconso/.pdd_cidacs.json')
-# dbs = client.list_db()
+client.authentication(Path().home() / '.pdd_cidacs.json')
+list_db = client.list_db()
 
-# print(dbs)
+for db in list_db:
+    shape_cur_db = client.shape(db)
+    list_db.update({db: {'shape': shape_cur_db, 'desc': list_db[db]}})
 
-query = """
-select * From 1 limit 20
-"""
-
-# res_query = client.download(query)
-res_query = client.download(query)
+print(list_db)
