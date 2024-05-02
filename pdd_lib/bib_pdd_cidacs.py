@@ -9,7 +9,9 @@ import tqdm
 
 
 class BibPddCidacs:
+    _host = 'http://35.209.112.76:3000'
     _auth = None
+    _client = Client(base_url=_host)
 
     def authentication(
         self, cred: Union[str | PosixPath | dict | None] = None
@@ -48,15 +50,13 @@ class BibPddCidacs:
             self._auth = BasicAuth(data['email'], data['token'])
 
     def list_db(self):
-        with Client() as client:
-
-            conn = client.get(
-                url='http://35.209.112.76:3000/list_db',
-                auth=self._auth,
-                timeout=None
-            )
-            if conn.status_code == 200:
-                return conn.json()
+        conn = self._client.get(
+            '/list_db',
+            auth=self._auth,
+            timeout=None
+        )
+        if conn.status_code == 200:
+            return conn.json()
 
     def _write_file(self, conn, filename, tqdm_params):
         with open(filename, 'wb') as fwb:
@@ -70,81 +70,91 @@ class BibPddCidacs:
         data = {
             'query': query,
         }
-        with Client() as client:
-            conn = client.post(
-                url='http://35.209.112.76:3000/query',
+        conn = self._client.post(
+            url='/query',
+            params=data,
+            auth=self._auth,
+            timeout=None
+        )
+        try:
+            return pd.read_json(io.StringIO(conn.json()))
+        except ValueError:
+            return json.loads(conn.json())
+            
+    def shape(self, dataset):
+
+        shape = list()
+        querys = [
+            f'SELECT COUNT(*) FROM {dataset}',
+            f'SELECT * FROM {dataset} LIMIT 1',
+        ]
+        
+        for query in querys:
+            data = {
+                'query': query
+            }
+            conn = self._client.post(
+                '/query',
                 params=data,
                 auth=self._auth,
                 timeout=None
             )
             try:
-                return pd.read_json(io.StringIO(conn.json()))
+                if len(shape):
+                    shape.append(len(pd.read_json(
+                        io.StringIO(conn.json())
+                    ).columns.to_list()))
+                else:
+                    shape.append(
+                        pd.read_json(
+                            io.StringIO(
+                                conn.json()
+                            )
+                        )['f0_'].to_list()[0]
+                    )
             except ValueError:
-                return conn.json()
-            
-    def shape(self, dataset):
-        shape = list()
-        querys = ['SELECT COUNT(*) FROM %s'%(str(dataset)), 'SELECT * FROM %s LIMIT 1'%(str(dataset))]
-        
-        for i in range(2):
-            data = {
-                'query': querys[i]
-            }
-            with Client() as client:
-                conn = client.post(url='http://35.209.112.76:3000/query',
-                                   params=data,
-                                   auth=self._auth,
-                                   timeout=None
-                                   )
-                try:
-                    if(i == 0): 
-                        shape.append(pd.read_json(io.StringIO(conn.json()))['f0_'].to_list()[0])
-                    else:
-                        shape.append(len(pd.read_json(io.StringIO(conn.json())).columns.to_list()))
-                except ValueError:
-                    return conn.json()
+                return json.loads(conn.json())
                 
         return shape  
-    
+
+
     def list_columns(self, dataset):
-         data = {
-            'query': 'SELECT * FROM %s LIMIT 1'%(str(dataset))
+        data = {
+            'query': f'SELECT * FROM {dataset} LIMIT 1'
         }
-         with Client() as client:
-            conn = client.post(url='http://35.209.112.76:3000/query',
-                               params=data,
-                               auth=self._auth,
-                               timeout=None)
-            try:
-                return pd.read_json(io.StringIO(conn.json())).columns.to_list()
-            except ValueError:
-                return conn.json()  
+        conn = self._client.post('/query',
+                                 params=data,
+                                 auth=self._auth,
+                                 timeout=None)
+        try:
+            return pd.read_json(io.StringIO(conn.json())).columns.to_list()
+        except ValueError:
+            return json.loads(conn.json())
 
     def download(self, query, filename=None):
         data = {
             'query': query,
         }
-        with Client() as client:
-            with client.stream(
-                url='http://35.209.112.76:3000/download',
-                params=data,
-                auth=self._auth,
-                timeout=None,
-                method='POST',
-            ) as conn:
-                total = int(conn.headers.get('content-length', 0))
-                tqdm_params = {
-                    'desc': filename,
-                    'total': total,
-                    'miniters': 1,
-                    'unit': 'B',
-                    'unit_scale': True,
-                    'unit_divisor': 1024
-                }
-                if filename is not None:
-                    self._write_file(conn, filename, tqdm_params)
-                elif filename is None:
-                    date = datetime.now().strftime('%Y-%m-%d')
-                    self._write_file(conn,
-                                     f'download_pdd_cidacs_{date}.csv',
-                                     tqdm_params)
+        with self._client.stream(
+            url='/download',
+            params=data,
+            auth=self._auth,
+            timeout=None,
+            method='POST',
+        ) as conn:
+            total = int(conn.headers.get('content-length', 0))
+            tqdm_params = {
+                'desc': filename,
+                'total': total,
+                'miniters': 1,
+                'unit': 'B',
+                'unit_scale': True,
+                'unit_divisor': 1024
+            }
+            if filename is not None:
+                self._write_file(conn, filename, tqdm_params)
+            elif filename is None:
+                date = datetime.now().strftime('%Y-%m-%d')
+                self._write_file(conn,
+                                 f'download_pdd_cidacs_{date}.csv',
+                                 tqdm_params)
