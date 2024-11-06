@@ -68,27 +68,27 @@ class BibPddCidacs:
 
     def query(self, query):
         data = {
-            'query': query,
+            'query': query
         }
         conn = self._client.post(
             url='/query',
-            params=data,
+            json=data,
             auth=self._auth,
             timeout=None
         )
+
         try:
-            return pd.read_json(io.StringIO(conn.json()))
+            return conn.json()
+            # return pd.read_json(io.StringIO(conn.json()))
         except ValueError:
             return json.loads(conn.json())
-            
-    def shape(self, dataset):
 
+    def shape(self, dataset):
         shape = list()
         querys = [
             f'SELECT COUNT(*) FROM {dataset}',
             f'SELECT * FROM {dataset} LIMIT 1',
         ]
-        
         for query in querys:
             data = {
                 'query': query
@@ -114,9 +114,8 @@ class BibPddCidacs:
                     )
             except ValueError:
                 return json.loads(conn.json())
-                
-        return shape  
 
+        return shape
 
     def list_columns(self, dataset):
         data = {
