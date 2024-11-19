@@ -78,44 +78,26 @@ class BibPddCidacs:
         )
 
         try:
-            return conn.json()
-            # return pd.read_json(io.StringIO(conn.json()))
+            return pd.DataFrame(conn.json()['rows'])
         except ValueError:
             return json.loads(conn.json())
 
     def shape(self, dataset):
-        shape = list()
-        querys = [
-            f'SELECT COUNT(*) FROM {dataset}',
-            f'SELECT * FROM {dataset} LIMIT 1',
-        ]
-        for query in querys:
-            data = {
-                'query': query
-            }
-            conn = self._client.post(
-                '/query',
-                json=data,
-                auth=self._auth,
-                timeout=None
-            )
-            try:
-                if len(shape):
-                    shape.append(len(pd.DataFrame(
-                        # io.StringIO(conn.json())
-                        conn.json()
-                    ).columns.to_list()))
-                else:
-                    shape.append(
-                        pd.DataFrame(
-                            # io.StringIO(conn.json())
-                            conn.json()
-                        )['f0_'].to_list()[0]
-                    )
-            except ValueError:
-                return conn.json()
+        data = {
+            'query': str(dataset)
+        }
+        conn = self._client.post(
+            '/shape',
+            json=data,
+            auth=self._auth,
+            timeout=None
+        )
+        try:
+            return conn.json()
+        except ValueError:
+            return conn.json()
 
-        return shape
+        # return pd.DataFrame(conn.json()['rows'])
 
     def list_columns(self, dataset):
         data = {
