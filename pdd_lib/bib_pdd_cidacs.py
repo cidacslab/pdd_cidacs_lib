@@ -95,25 +95,25 @@ class BibPddCidacs:
             }
             conn = self._client.post(
                 '/query',
-                params=data,
+                json=data,
                 auth=self._auth,
                 timeout=None
             )
             try:
                 if len(shape):
-                    shape.append(len(pd.read_json(
-                        io.StringIO(conn.json())
+                    shape.append(len(pd.DataFrame(
+                        # io.StringIO(conn.json())
+                        conn.json()
                     ).columns.to_list()))
                 else:
                     shape.append(
-                        pd.read_json(
-                            io.StringIO(
-                                conn.json()
-                            )
+                        pd.DataFrame(
+                            # io.StringIO(conn.json())
+                            conn.json()
                         )['f0_'].to_list()[0]
                     )
             except ValueError:
-                return json.loads(conn.json())
+                return conn.json()
 
         return shape
 
@@ -122,7 +122,7 @@ class BibPddCidacs:
             'query': f'SELECT * FROM {dataset} LIMIT 1'
         }
         conn = self._client.post('/query',
-                                 params=data,
+                                 json=data,
                                  auth=self._auth,
                                  timeout=None)
         try:
@@ -136,7 +136,7 @@ class BibPddCidacs:
         }
         with self._client.stream(
             url='/download',
-            params=data,
+            json=data,
             auth=self._auth,
             timeout=None,
             method='POST',
