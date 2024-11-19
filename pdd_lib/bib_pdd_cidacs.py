@@ -108,7 +108,7 @@ class BibPddCidacs:
                                  auth=self._auth,
                                  timeout=None)
         try:
-            return pd.read_json(io.StringIO(conn.json())).columns.to_list()
+            return list(conn.json()['rows'][0].keys())
         except ValueError:
             return json.loads(conn.json())
 
