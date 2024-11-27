@@ -80,7 +80,7 @@ class BibPddCidacs:
         try:
             return pd.DataFrame(conn.json()['rows'])
         except ValueError:
-            return json.loads(conn.json())
+            return conn.json()
 
     def shape(self, dataset):
         data = {
@@ -110,7 +110,7 @@ class BibPddCidacs:
         try:
             return list(conn.json()['rows'][0].keys())
         except ValueError:
-            return json.loads(conn.json())
+            return conn.json()
 
     def download(self, query, filename=None):
         data = {
