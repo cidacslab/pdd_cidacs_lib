@@ -1,7 +1,6 @@
 from datetime import datetime
 import json
 from pathlib import Path, PosixPath
-import io
 from typing import Union
 from httpx import BasicAuth, Client
 import pandas as pd
