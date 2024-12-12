@@ -78,7 +78,7 @@ class BibPddCidacs:
 
         try:
             return pd.DataFrame(conn.json()['rows'])
-        except ValueError:
+        except (ValueError, KeyError):
             return conn.json()
 
     def shape(self, dataset):
